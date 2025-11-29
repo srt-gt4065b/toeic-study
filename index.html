@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -598,7 +599,7 @@
             <button class="btn btn-secondary" onclick="showLeaderboard()">🏆 순위 보기</button>
             
             <div class="admin-link">
-                <a href="admin.html" style="color:#667eea;">🔧 관리자 모드</a>
+                <a href="#" onclick="showAdminLogin()">관리자 모드</a>
             </div>
         </div>
     </div>
@@ -1234,10 +1235,10 @@
             const spacing = game.width / 5;
             allOptions.forEach((option, i) => {
                 game.enemies.push({
-                    x: spacing * (i + 1) - 50,
-                    y: -80 - i * 50,
-                    width: 100,
-                    height: 50,
+                    x: spacing * (i + 1) - 70,
+                    y: -100 - i * 60,
+                    width: 140,
+                    height: 65,
                     speed: 0.8 + Math.random() * 0.3,
                     text: option.text,
                     isCorrect: option.isCorrect,
@@ -1329,7 +1330,27 @@
                             game.correctCount++;
                             game.questionAnswered = true;
                             playSound(523, 0.3, 'sine');
-                            showFeedback('정답! +' + game.maxScore + '점', '#4caf50');
+                            
+                            // 다양한 칭찬 메시지
+                            const praises = [
+                                '🎉 정답! 대단해요!',
+                                '⭐ 완벽해요! 천재!',
+                                '🔥 불타는 실력!',
+                                '💯 정확해요! 최고!',
+                                '🚀 멋져요! 계속!',
+                                '👏 브라보! 훌륭해요!',
+                                '🏆 챔피언! 멋지다!',
+                                '✨ 반짝반짝 정답!',
+                                '💪 역시 실력자!',
+                                '🌟 스타 탄생!',
+                                '😎 쿨하게 정답!',
+                                '🎯 명중! 완벽!',
+                                '👍 굿! 잘했어요!',
+                                '💎 보석 같은 실력!',
+                                '🦸 영단어 히어로!'
+                            ];
+                            const praise = praises[Math.floor(Math.random() * praises.length)];
+                            showFeedback(praise + '\n+' + game.maxScore + '점', '#4caf50');
                             
                             setTimeout(() => nextQuestion(), 1000);
                         } else if (enemy.type === 'main') {
@@ -1461,7 +1482,7 @@
                 
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 13px Arial';
+                ctx.font = 'bold 22px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(enemy.text, enemy.x + enemy.width/2, enemy.y + enemy.height/2);
