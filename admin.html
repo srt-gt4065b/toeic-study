@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ 토익 갤러그 관리자</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 로그인 화면 */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: rgba(26, 26, 46, 0.95);
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+
+        .login-box .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        /* 버튼 */
+        .btn {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .btn-success { background: linear-gradient(135deg, #4caf50, #8bc34a); }
+        .btn-warning { background: linear-gradient(135deg, #ff9800, #ffb74d); }
+        .btn-danger { background: linear-gradient(135deg, #f44336, #ff5722); }
+        .btn-secondary { background: linear-gradient(135deg, #455a64, #78909c); }
+        .btn-small { padding: 8px 16px; font-size: 12px; }
+        .btn-full { width: 100%; }
+
+        /* 입력 필드 */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #f093fb;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        /* 탭 네비게이션 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 25px;
+            background: rgba(102, 126, 234, 0.2);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(102, 126, 234, 0.4);
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        /* 카드 */
+        .card {
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 그리드 */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        /* 통계 박스 */
+        .stat-box {
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-box .label {
+            font-size: 13px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* CSV 업로드 영역 */
+        .upload-area {
+            border: 3px dashed rgba(102, 126, 234, 0.5);
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #f093fb;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-area .icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        /* 미리보기 */
+        .preview-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* 테이블 */
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        th {
+            background: rgba(102, 126, 234, 0.3);
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-level {
+            background: rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+        }
+
+        /* 검색/필터 바 */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-bar input, .filter-bar select {
+            width: auto;
+            min-width: 150px;
+        }
+
+        /* 단어 목록 아이템 */
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .word-item .word {
+            font-weight: bold;
+            color: #ffd700;
+            min-width: 150px;
+        }
+
+        .word-item .meaning {
+            flex: 1;
+            color: #00ff88;
+        }
+
+        .word-item .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* 모달 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        /* 로딩 */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 알림 토스트 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 3000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { background: #4caf50; }
+        .toast.error { background: #f44336; }
+        .toast.info { background: #2196f3; }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .tabs {
+                justify-content: center;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+            }
+
+            .filter-bar input, .filter-bar select {
+                width: 100%;
+            }
+        }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 4px; }
+
+        /* 포맷 안내 */
+        .format-guide {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .format-guide code {
+            color: #00ff88;
+            background: rgba(0,255,136,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* 단어 추가 폼 */
+        .add-word-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .add-word-form input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        /* 페이지 섹션 */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 로그인 화면 -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <div class="icon">⚙️</div>
+            <h2>관리자 로그인</h2>
+            <div class="input-group">
+                <label>비밀번호</label>
+                <input type="password" id="adminPassword" placeholder="관리자 비밀번호 입력" onkeypress="if(event.key==='Enter') adminLogin()">
+            </div>
+            <button class="btn btn-primary btn-full" onclick="adminLogin()">로그인</button>
+            <p style="margin-top:20px; font-size:12px; opacity:0.5;">
+                <a href="index.html" style="color:#667eea;">← 게임으로 돌아가기</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container" id="mainContainer" style="display:none;">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>⚙️ 토익 갤러그 관리자</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary btn-small" onclick="location.href='index.html'">🎮 게임으로</button>
+                <button class="btn btn-danger btn-small" onclick="adminLogout()">🚪 로그아웃</button>
+            </div>
+        </div>
+
+        <!-- 탭 네비게이션 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showSection('dashboard')">📊 대시보드</button>
+            <button class="tab-btn" onclick="showSection('words')">📚 단어 관리</button>
+            <button class="tab-btn" onclick="showSection('upload')">📤 CSV 업로드</button>
+            <button class="tab-btn" onclick="showSection('scores')">🏆 점수 관리</button>
+            <button class="tab-btn" onclick="showSection('students')">👥 학생 현황</button>
+        </div>
+
+        <!-- 대시보드 섹션 -->
+        <div class="section active" id="section-dashboard">
+            <div class="grid-2">
+                <!-- 단어 통계 -->
+                <div class="card">
+                    <div class="card-title">📚 레벨별 단어 현황</div>
+                    <div class="grid-4" id="wordStats">
+                        <!-- 동적 로드 -->
+                    </div>
+                </div>
+
+                <!-- 게임 통계 -->
+                <div class="card">
+                    <div class="card-title">🎮 게임 통계</div>
+                    <div class="grid-4">
+                        <div class="stat-box">
+                            <div class="value" id="totalPlayers">0</div>
+                            <div class="label">총 플레이어</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="totalGames">0</div>
+                            <div class="label">총 게임 수</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="avgScore">0</div>
+                            <div class="label">평균 점수</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="value" id="todayGames">0</div>
+                            <div class="label">오늘 게임</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 최근 게임 기록 -->
+            <div class="card">
+                <div class="card-title">🕐 최근 게임 기록</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>시간</th>
+                                <th>학번</th>
+                                <th>이름</th>
+                                <th>레벨</th>
+                                <th>점수</th>
+                                <th>정답률</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentGames">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 단어 관리 섹션 -->
+        <div class="section" id="section-words">
+            <div class="card">
+                <div class="card-title">📚 단어 관리</div>
+                
+                <!-- 레벨 선택 -->
+                <div class="filter-bar">
+                    <select id="wordLevelSelect" onchange="loadWords()">
+                        <option value="300">토익 300점 목표</option>
+                        <option value="400">토익 400점 목표</option>
+                        <option value="500">토익 500점 목표</option>
+                        <option value="600" selected>토익 600점 목표</option>
+                        <option value="700">토익 700점 목표</option>
+                        <option value="800">토익 800점 목표</option>
+                        <option value="900">토익 900점 목표</option>
+                        <option value="1000">토익 990점+ 목표</option>
+                    </select>
+                    <input type="text" id="wordSearch" placeholder="🔍 단어 검색..." oninput="filterWords()">
+                    <span id="wordCount" style="opacity:0.7;">0개 단어</span>
+                </div>
+
+                <!-- 단어 추가 -->
+                <div class="add-word-form">
+                    <input type="text" id="newWord" placeholder="영어 단어">
+                    <input type="text" id="newMeaning" placeholder="한국어 뜻">
+                    <button class="btn btn-success" onclick="addWord()">➕ 추가</button>
+                </div>
+
+                <!-- 단어 목록 -->
+                <div id="wordList" style="max-height:400px; overflow-y:auto;">
+                    <!-- 동적 로드 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- CSV 업로드 섹션 -->
+        <div class="section" id="section-upload">
+            <div class="card">
+                <div class="card-title">📤 CSV 일괄 업로드</div>
+
+                <div class="input-group">
+                    <label>업로드할 레벨 선택</label>
+                    <select id="uploadLevelSelect">
+                        <option value="300">토익 300점 목표</option>
+                        <option value="400">토익 400점 목표</option>
+                        <option value="500">토익 500점 목표</option>
+                        <option value="600" selected>토익 600점 목표</option>
+                        <option value="700">토익 700점 목표</option>
+                        <option value="800">토익 800점 목표</option>
+                        <option value="900">토익 900점 목표</option>
+                        <option value="1000">토익 990점+ 목표</option>
+                    </select>
+                </div>
+
+                <div class="format-guide">
+                    <strong>📋 CSV 파일 형식:</strong><br><br>
+                    <code>word,meaning</code><br>
+                    <code>abundant,풍부한</code><br>
+                    <code>acquire,획득하다</code><br>
+                    <code>adequate,적절한</code><br><br>
+                    ※ 첫 줄 헤더(word,meaning)는 있어도 없어도 됩니다.<br>
+                    ※ 업로드 시 해당 레벨의 기존 단어가 모두 교체됩니다.
+                </div>
+
+                <div class="upload-area" onclick="document.getElementById('csvFile').click()" id="uploadArea">
+                    <div class="icon">📄</div>
+                    <div>CSV 파일을 클릭하여 선택</div>
+                    <div style="font-size:12px; opacity:0.6; margin-top:5px;">또는 여기에 파일을 드래그</div>
+                    <input type="file" id="csvFile" accept=".csv" onchange="handleCSV(this)">
+                </div>
+
+                <div class="preview-box" id="csvPreview" style="display:none;"></div>
+
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-success" id="uploadBtn" onclick="uploadWords()" disabled>📤 업로드</button>
+                    <button class="btn btn-secondary" onclick="clearUpload()">🗑️ 초기화</button>
+                </div>
+            </div>
+
+            <!-- 샘플 다운로드 -->
+            <div class="card">
+                <div class="card-title">📥 샘플 CSV 다운로드</div>
+                <p style="margin-bottom:15px; opacity:0.7;">각 레벨별 샘플 CSV 파일을 다운로드하여 형식을 참고하세요.</p>
+                <button class="btn btn-primary btn-small" onclick="downloadSampleCSV()">📥 샘플 CSV 다운로드</button>
+            </div>
+        </div>
+
+        <!-- 점수 관리 섹션 -->
+        <div class="section" id="section-scores">
+            <div class="card">
+                <div class="card-title">🏆 점수 기록 관리</div>
+
+                <div class="filter-bar">
+                    <select id="scoreLevelFilter" onchange="loadScores()">
+                        <option value="all">전체 레벨</option>
+                        <option value="300">300점</option>
+                        <option value="400">400점</option>
+                        <option value="500">500점</option>
+                        <option value="600">600점</option>
+                        <option value="700">700점</option>
+                        <option value="800">800점</option>
+                        <option value="900">900점</option>
+                        <option value="1000">990+점</option>
+                    </select>
+                    <input type="text" id="scoreSearch" placeholder="🔍 학번/이름 검색..." oninput="filterScores()">
+                    <button class="btn btn-success btn-small" onclick="exportScoresCSV()">📥 CSV 내보내기</button>
+                    <button class="btn btn-danger btn-small" onclick="confirmDeleteAllScores()">🗑️ 전체 삭제</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>순위</th>
+                                <th>날짜</th>
+                                <th>학번</th>
+                                <th>이름</th>
+                                <th>레벨</th>
+                                <th>점수</th>
+                                <th>정답</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 학생 현황 섹션 -->
+        <div class="section" id="section-students">
+            <div class="card">
+                <div class="card-title">👥 학생별 현황</div>
+
+                <div class="filter-bar">
+                    <input type="text" id="studentSearch" placeholder="🔍 학번/이름 검색..." oninput="filterStudents()">
+                    <button class="btn btn-success btn-small" onclick="exportStudentsCSV()">📥 CSV 내보내기</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>학번</th>
+                                <th>이름</th>
+                                <th>총 게임</th>
+                                <th>최고 점수</th>
+                                <th>평균 점수</th>
+                                <th>최근 플레이</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 단어 수정 모달 -->
+    <div class="modal" id="editWordModal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ 단어 수정</div>
+            <input type="hidden" id="editWordKey">
+            <div class="input-group">
+                <label>영어 단어</label>
+                <input type="text" id="editWordText">
+            </div>
+            <div class="input-group">
+                <label>한국어 뜻</label>
+                <input type="text" id="editWordMeaning">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-success" onclick="saveEditWord()">💾 저장</button>
+                <button class="btn btn-secondary" onclick="closeModal('editWordModal')">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // Firebase 설정
+        // ========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6NONPoeAGHcMLkLwPunduIGqmODUQnAQ",
+  authDomain: "toeic-voca-30c67.firebaseapp.com",
+  databaseURL: "https://toeic-voca-30c67-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "toeic-voca-30c67",
+  storageBucket: "toeic-voca-30c67.firebasestorage.app",
+  messagingSenderId: "740332360254",
+  appId: "1:740332360254:web:c04edc2988a6e6f63f776f",
+  measurementId: "G-9E8HXE4LJ7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========================================
+        // 전역 변수
+        // ========================================
+        const ADMIN_PASSWORD = 'admin1234';
+        let currentWords = [];
+        let currentScores = [];
+        let csvData = [];
+
+        // ========================================
+        // 로그인/로그아웃
+        // ========================================
+        function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainContainer').style.display = 'block';
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                loadDashboard();
+            } else {
+                showToast('비밀번호가 틀렸습니다.', 'error');
+            }
+        }
+
+        function adminLogout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        // 세션 체크
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContainer').style.display = 'block';
+            loadDashboard();
+        }
+
+        // ========================================
+        // 섹션 전환
+        // ========================================
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById('section-' + sectionName).classList.add('active');
+            event.target.classList.add('active');
+
+            // 섹션별 데이터 로드
+            switch(sectionName) {
+                case 'dashboard': loadDashboard(); break;
+                case 'words': loadWords(); break;
+                case 'scores': loadScores(); break;
+                case 'students': loadStudents(); break;
+            }
+        }
+
+        // ========================================
+        // 대시보드
+        // ========================================
+        function loadDashboard() {
+            loadWordStats();
+            loadGameStats();
+            loadRecentGames();
+        }
+
+        function loadWordStats() {
+            const levels = [300, 400, 500, 600, 700, 800, 900, 1000];
+            const container = document.getElementById('wordStats');
+            container.innerHTML = '';
+
+            levels.forEach(level => {
+                database.ref(`toeic_galaga/words/level${level}`).once('value')
+                    .then(snapshot => {
+                        const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
+                        container.innerHTML += `
+                            <div class="stat-box">
+                                <div class="value">${count}</div>
+                                <div class="label">${level}점</div>
+                            </div>
+                        `;
+                    });
+            });
+        }
+
+        function loadGameStats() {
+            database.ref('toeic_galaga/scores').once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        document.getElementById('totalPlayers').textContent = '0';
+                        document.getElementById('totalGames').textContent = '0';
+                        document.getElementById('avgScore').textContent = '0';
+                        document.getElementById('todayGames').textContent = '0';
+                        return;
+                    }
+
+                    const scores = [];
+                    const players = new Set();
+                    const today = new Date().toDateString();
+                    let todayCount = 0;
+                    let totalScore = 0;
+
+                    snapshot.forEach(child => {
+                        const data = child.val();
+                        scores.push(data);
+                        players.add(data.studentId);
+                        totalScore += data.score || 0;
+                        
+                        if (new Date(data.timestamp).toDateString() === today) {
+                            todayCount++;
+                        }
+                    });
+
+                    document.getElementById('totalPlayers').textContent = players.size;
+                    document.getElementById('totalGames').textContent = scores.length;
+                    document.getElementById('avgScore').textContent = scores.length > 0 ? Math.round(totalScore / scores.length) : 0;
+                    document.getElementById('todayGames').textContent = todayCount;
+                });
+        }
+
+        function loadRecentGames() {
+            database.ref('toeic_galaga/scores')
+                .orderByChild('timestamp')
+                .limitToLast(20)
+                .once('value')
+                .then(snapshot => {
+                    const games = [];
+                    snapshot.forEach(child => games.push(child.val()));
+                    games.reverse();
+
+                    const tbody = document.getElementById('recentGames');
+                    tbody.innerHTML = games.map(g => `
+                        <tr>
+                            <td>${formatDate(g.timestamp)}</td>
+                            <td>${g.studentId}</td>
+                            <td>${g.playerName}</td>
+                            <td><span class="badge badge-level">${g.level}점</span></td>
+                            <td style="color:#ffd700; font-weight:bold;">${g.score}</td>
+                            <td>${g.correct}/${g.total}</td>
+                        </tr>
+                    `).join('');
+                });
+        }
+
+        // ========================================
+        // 단어 관리
+        // ========================================
+        function loadWords() {
+            const level = document.getElementById('wordLevelSelect').value;
+            showLoading(true);
+
+            database.ref(`toeic_galaga/words/level${level}`).once('value')
+                .then(snapshot => {
+                    currentWords = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach(child => {
+                            currentWords.push({
+                                key: child.key,
+                                ...child.val()
+                            });
+                        });
+                    }
+                    renderWords();
+                    showLoading(false);
+                })
+                .catch(err => {
+                    showToast('단어 로드 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function renderWords() {
+            const search = document.getElementById('wordSearch').value.toLowerCase();
+            const filtered = currentWords.filter(w => 
+                w.word.toLowerCase().includes(search) || 
+                w.meaning.toLowerCase().includes(search)
+            );
+
+            document.getElementById('wordCount').textContent = `${filtered.length}개 단어`;
+
+            const container = document.getElementById('wordList');
+            container.innerHTML = filtered.map(w => `
+                <div class="word-item">
+                    <span class="word">${w.word}</span>
+                    <span class="meaning">${w.meaning}</span>
+                    <div class="actions">
+                        <button class="btn btn-warning btn-small" onclick="editWord('${w.key}', '${w.word}', '${w.meaning}')">✏️</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteWord('${w.key}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterWords() {
+            renderWords();
+        }
+
+        function addWord() {
+            const word = document.getElementById('newWord').value.trim();
+            const meaning = document.getElementById('newMeaning').value.trim();
+            const level = document.getElementById('wordLevelSelect').value;
+
+            if (!word || !meaning) {
+                showToast('단어와 뜻을 모두 입력하세요.', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            database.ref(`toeic_galaga/words/level${level}`).push({ word, meaning })
+                .then(() => {
+                    showToast('단어가 추가되었습니다.', 'success');
+                    document.getElementById('newWord').value = '';
+                    document.getElementById('newMeaning').value = '';
+                    loadWords();
+                })
+                .catch(err => {
+                    showToast('추가 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function editWord(key, word, meaning) {
+            document.getElementById('editWordKey').value = key;
+            document.getElementById('editWordText').value = word;
+            document.getElementById('editWordMeaning').value = meaning;
+            document.getElementById('editWordModal').classList.add('show');
+        }
+
+        function saveEditWord() {
+            const key = document.getElementById('editWordKey').value;
+            const word = document.getElementById('editWordText').value.trim();
+            const meaning = document.getElementById('editWordMeaning').value.trim();
+            const level = document.getElementById('wordLevelSelect').value;
+
+            if (!word || !meaning) {
+                showToast('단어와 뜻을 모두 입력하세요.', 'error');
+                return;
+            }
+
+            showLoading(true);
+            closeModal('editWordModal');
+
+            database.ref(`toeic_galaga/words/level${level}/${key}`).update({ word, meaning })
+                .then(() => {
+                    showToast('단어가 수정되었습니다.', 'success');
+                    loadWords();
+                })
+                .catch(err => {
+                    showToast('수정 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function deleteWord(key) {
+            if (!confirm('이 단어를 삭제하시겠습니까?')) return;
+
+            const level = document.getElementById('wordLevelSelect').value;
+            showLoading(true);
+
+            database.ref(`toeic_galaga/words/level${level}/${key}`).remove()
+                .then(() => {
+                    showToast('단어가 삭제되었습니다.', 'success');
+                    loadWords();
+                })
+                .catch(err => {
+                    showToast('삭제 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        // ========================================
+        // CSV 업로드
+        // ========================================
+        function handleCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseCSV(e.target.result);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            csvData = [];
+
+            const firstLine = lines[0].toLowerCase();
+            const startIndex = (firstLine.includes('word') || firstLine.includes('meaning')) ? 1 : 0;
+
+            for (let i = startIndex; i < lines.length; i++) {
+                const parts = lines[i].split(',').map(p => p.trim().replace(/^["']|["']$/g, ''));
+                if (parts.length >= 2 && parts[0] && parts[1]) {
+                    csvData.push({ word: parts[0], meaning: parts[1] });
+                }
+            }
+
+            const preview = document.getElementById('csvPreview');
+            if (csvData.length > 0) {
+                preview.style.display = 'block';
+                preview.innerHTML = `<strong style="color:#00ff88;">✅ 총 ${csvData.length}개 단어 인식</strong><br><br>` +
+                    csvData.slice(0, 15).map((w, i) => `${i+1}. ${w.word} → ${w.meaning}`).join('<br>') +
+                    (csvData.length > 15 ? '<br>...' : '');
+                document.getElementById('uploadBtn').disabled = false;
+            } else {
+                preview.style.display = 'block';
+                preview.innerHTML = '<span style="color:#ff6b6b;">❌ 유효한 데이터가 없습니다.</span>';
+                document.getElementById('uploadBtn').disabled = true;
+            }
+        }
+
+        function uploadWords() {
+            if (csvData.length === 0) return;
+
+            const level = document.getElementById('uploadLevelSelect').value;
+
+            if (!confirm(`레벨 ${level}에 ${csvData.length}개 단어를 업로드하시겠습니까?\n\n⚠️ 기존 단어가 모두 대체됩니다!`)) {
+                return;
+            }
+
+            showLoading(true);
+
+            const updates = {};
+            csvData.forEach((word, index) => {
+                updates[`word_${index}`] = word;
+            });
+
+            database.ref(`toeic_galaga/words/level${level}`).set(updates)
+                .then(() => {
+                    showLoading(false);
+                    showToast(`${csvData.length}개 단어가 업로드되었습니다!`, 'success');
+                    clearUpload();
+                    loadWordStats();
+                })
+                .catch(err => {
+                    showLoading(false);
+                    showToast('업로드 실패: ' + err.message, 'error');
+                });
+        }
+
+        function clearUpload() {
+            csvData = [];
+            document.getElementById('csvPreview').style.display = 'none';
+            document.getElementById('csvFile').value = '';
+            document.getElementById('uploadBtn').disabled = true;
+        }
+
+        function downloadSampleCSV() {
+            const sample = 'word,meaning\nabundant,풍부한\nacquire,획득하다\nadequate,적절한\naccomplish,성취하다\nanticipate,예상하다';
+            const blob = new Blob(['\uFEFF' + sample], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'toeic_words_sample.csv';
+            link.click();
+        }
+
+        // 드래그 앤 드롭
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#f093fb';
+            uploadArea.style.background = 'rgba(102, 126, 234, 0.2)';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.5)';
+            uploadArea.style.background = 'transparent';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'rgba(102, 126, 234, 0.5)';
+            uploadArea.style.background = 'transparent';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                const reader = new FileReader();
+                reader.onload = (e) => parseCSV(e.target.result);
+                reader.readAsText(file);
+            } else {
+                showToast('CSV 파일만 업로드 가능합니다.', 'error');
+            }
+        });
+
+        // ========================================
+        // 점수 관리
+        // ========================================
+        function loadScores() {
+            showLoading(true);
+
+            database.ref('toeic_galaga/scores')
+                .orderByChild('score')
+                .once('value')
+                .then(snapshot => {
+                    currentScores = [];
+                    snapshot.forEach(child => {
+                        currentScores.push({ key: child.key, ...child.val() });
+                    });
+                    currentScores.reverse();
+                    renderScores();
+                    showLoading(false);
+                })
+                .catch(err => {
+                    showToast('점수 로드 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function renderScores() {
+            const levelFilter = document.getElementById('scoreLevelFilter').value;
+            const search = document.getElementById('scoreSearch').value.toLowerCase();
+
+            let filtered = currentScores;
+            
+            if (levelFilter !== 'all') {
+                filtered = filtered.filter(s => s.level == levelFilter);
+            }
+            
+            if (search) {
+                filtered = filtered.filter(s => 
+                    s.studentId.toLowerCase().includes(search) ||
+                    s.playerName.toLowerCase().includes(search)
+                );
+            }
+
+            const tbody = document.getElementById('scoresTable');
+            tbody.innerHTML = filtered.slice(0, 100).map((s, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${formatDate(s.timestamp)}</td>
+                    <td>${s.studentId}</td>
+                    <td>${s.playerName}</td>
+                    <td><span class="badge badge-level">${s.level}점</span></td>
+                    <td style="color:#ffd700; font-weight:bold;">${s.score}</td>
+                    <td>${s.correct}/${s.total}</td>
+                    <td>
+                        <button class="btn btn-danger btn-small" onclick="deleteScore('${s.key}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterScores() {
+            renderScores();
+        }
+
+        function deleteScore(key) {
+            if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+
+            showLoading(true);
+            database.ref(`toeic_galaga/scores/${key}`).remove()
+                .then(() => {
+                    showToast('기록이 삭제되었습니다.', 'success');
+                    loadScores();
+                })
+                .catch(err => {
+                    showToast('삭제 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function confirmDeleteAllScores() {
+            if (!confirm('⚠️ 정말로 모든 점수 기록을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!')) return;
+            if (!confirm('정말로 삭제하시겠습니까? 마지막 확인입니다.')) return;
+
+            showLoading(true);
+            database.ref('toeic_galaga/scores').remove()
+                .then(() => {
+                    showToast('모든 기록이 삭제되었습니다.', 'success');
+                    loadScores();
+                    loadDashboard();
+                })
+                .catch(err => {
+                    showToast('삭제 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function exportScoresCSV() {
+            if (currentScores.length === 0) {
+                showToast('내보낼 데이터가 없습니다.', 'error');
+                return;
+            }
+
+            const headers = ['순위', '날짜', '학번', '이름', '레벨', '점수', '정답', '총문제'];
+            const rows = currentScores.map((s, i) => [
+                i + 1,
+                formatDate(s.timestamp),
+                s.studentId,
+                s.playerName,
+                s.level,
+                s.score,
+                s.correct,
+                s.total
+            ]);
+
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            downloadCSV(csv, `toeic_galaga_scores_${formatDateFile()}.csv`);
+        }
+
+        // ========================================
+        // 학생 현황
+        // ========================================
+        function loadStudents() {
+            showLoading(true);
+
+            database.ref('toeic_galaga/scores').once('value')
+                .then(snapshot => {
+                    const students = {};
+
+                    snapshot.forEach(child => {
+                        const data = child.val();
+                        const id = data.studentId;
+
+                        if (!students[id]) {
+                            students[id] = {
+                                studentId: id,
+                                playerName: data.playerName,
+                                games: 0,
+                                totalScore: 0,
+                                maxScore: 0,
+                                lastPlay: 0
+                            };
+                        }
+
+                        students[id].games++;
+                        students[id].totalScore += data.score || 0;
+                        students[id].maxScore = Math.max(students[id].maxScore, data.score || 0);
+                        students[id].lastPlay = Math.max(students[id].lastPlay, data.timestamp || 0);
+                    });
+
+                    renderStudents(Object.values(students));
+                    showLoading(false);
+                })
+                .catch(err => {
+                    showToast('학생 데이터 로드 실패: ' + err.message, 'error');
+                    showLoading(false);
+                });
+        }
+
+        function renderStudents(students) {
+            const search = document.getElementById('studentSearch').value.toLowerCase();
+            
+            let filtered = students;
+            if (search) {
+                filtered = students.filter(s => 
+                    s.studentId.toLowerCase().includes(search) ||
+                    s.playerName.toLowerCase().includes(search)
+                );
+            }
+
+            // 게임 수 기준 정렬
+            filtered.sort((a, b) => b.games - a.games);
+
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = filtered.map(s => `
+                <tr>
+                    <td>${s.studentId}</td>
+                    <td>${s.playerName}</td>
+                    <td>${s.games}</td>
+                    <td style="color:#ffd700; font-weight:bold;">${s.maxScore}</td>
+                    <td>${Math.round(s.totalScore / s.games)}</td>
+                    <td>${formatDate(s.lastPlay)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterStudents() {
+            loadStudents();
+        }
+
+        function exportStudentsCSV() {
+            // 테이블에서 데이터 추출
+            const rows = [];
+            document.querySelectorAll('#studentsTable tr').forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length > 0) {
+                    rows.push([
+                        cells[0].textContent,
+                        cells[1].textContent,
+                        cells[2].textContent,
+                        cells[3].textContent,
+                        cells[4].textContent,
+                        cells[5].textContent
+                    ]);
+                }
+            });
+
+            if (rows.length === 0) {
+                showToast('내보낼 데이터가 없습니다.', 'error');
+                return;
+            }
+
+            const headers = ['학번', '이름', '총게임', '최고점수', '평균점수', '최근플레이'];
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            downloadCSV(csv, `toeic_galaga_students_${formatDateFile()}.csv`);
+        }
+
+        // ========================================
+        // 유틸리티
+        // ========================================
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '-';
+            const d = new Date(timestamp);
+            return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+
+        function formatDateFile() {
+            const d = new Date();
+            return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
+</body>
+</html>
