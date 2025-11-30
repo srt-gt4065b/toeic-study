@@ -700,13 +700,13 @@
         // ========================================
         const firebaseConfig = {
             apiKey: "AIzaSyA6NONPoeAGHcMLkLwPunduIGqmODUQnAQ",
-  authDomain: "toeic-voca-30c67.firebaseapp.com",
-  databaseURL: "https://toeic-voca-30c67-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "toeic-voca-30c67",
-  storageBucket: "toeic-voca-30c67.firebasestorage.app",
-  messagingSenderId: "740332360254",
-  appId: "1:740332360254:web:c04edc2988a6e6f63f776f",
-  measurementId: "G-9E8HXE4LJ7"
+  	authDomain: "toeic-voca-30c67.firebaseapp.com",
+  	databaseURL: "https://toeic-voca-30c67-default-rtdb.asia-southeast1.firebasedatabase.app",
+  	projectId: "toeic-voca-30c67",
+  	storageBucket: "toeic-voca-30c67.firebasestorage.app",
+ 	messagingSenderId: "740332360254",
+  	appId: "1:740332360254:web:c04edc2988a6e6f63f776f",
+  	measurementId: "G-9E8HXE4LJ7"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -935,18 +935,26 @@
                     return;
                 }
                 
-                initGame();
                 showLoading(false);
                 showScreen('gameScreen');
-                requestAnimationFrame(gameLoop);
+                
+                // 화면 전환 후 캔버스 크기가 제대로 계산되도록 지연 초기화
+                setTimeout(() => {
+                    initGame();
+                    requestAnimationFrame(gameLoop);
+                }, 100);
                 
             } catch (error) {
                 console.error('Error loading words:', error);
                 game.words = [...defaultWords[player.currentLevel]];
-                initGame();
                 showLoading(false);
                 showScreen('gameScreen');
-                requestAnimationFrame(gameLoop);
+                
+                // 화면 전환 후 캔버스 크기가 제대로 계산되도록 지연 초기화
+                setTimeout(() => {
+                    initGame();
+                    requestAnimationFrame(gameLoop);
+                }, 100);
             }
         }
 
@@ -988,10 +996,19 @@
 
         function resizeCanvas() {
             const container = game.canvas.parentElement;
-            game.canvas.width = container.clientWidth;
-            game.canvas.height = container.clientHeight;
-            game.width = game.canvas.width;
-            game.height = game.canvas.height;
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+            
+            // 크기가 0인 경우 기본값 설정 (안전장치)
+            if (width === 0 || height === 0) {
+                width = window.innerWidth;
+                height = window.innerHeight - 200;  // 상단 UI 공간 제외
+            }
+            
+            game.canvas.width = width;
+            game.canvas.height = height;
+            game.width = width;
+            game.height = height;
             
             // 모바일 스케일 팩터 계산 (기준: 400px)
             game.scaleFactor = Math.min(1, game.width / 400);
@@ -1129,6 +1146,13 @@
         // ========================================
         function gameLoop(timestamp) {
             if (!game.running) return;
+            
+            // 캔버스 크기가 0이면 다시 초기화
+            if (game.width === 0 || game.height === 0) {
+                resizeCanvas();
+                game.ship.x = game.width / 2 - game.ship.width / 2;
+                game.ship.y = game.height - game.ship.height - 20;
+            }
             
             const dt = timestamp - game.lastTime;
             game.lastTime = timestamp;
