@@ -507,25 +507,29 @@
     <!-- ===== 로그인 화면 ===== -->
     <div class="screen active" id="loginScreen">
         <div class="card">
+            <div style="text-align:center; margin-bottom:15px;">
+                <div style="font-size:12px; color:#667eea; letter-spacing:1px;">우송대학교 AI경영학과</div>
+                <div style="font-size:14px; color:#f093fb; font-weight:bold; margin-top:3px;">🎓 게임기반 학습플랫폼</div>
+            </div>
             <div class="logo">🚀</div>
             <h1 class="title">토익 영단어 갤러그</h1>
-            <p class="subtitle">Woosong AI Management</p>
+            <p class="subtitle">TOEIC Vocabulary Learning Game</p>
 
             <div class="input-group">
-                <label>학번</label>
-                <input type="text" id="studentId" placeholder="학번 입력" maxlength="20">
+                <label>학번 (Student ID)</label>
+                <input type="text" id="studentId" placeholder="학번 입력 / Enter Student ID" maxlength="20">
             </div>
 
             <div class="input-group">
-                <label>이름</label>
-                <input type="text" id="playerName" placeholder="이름 입력" maxlength="10">
+                <label>이름 (Name)</label>
+                <input type="text" id="playerName" placeholder="이름 입력 / Enter Name" maxlength="10">
             </div>
 
-            <button class="btn btn-primary" onclick="login()">🎮 시작하기</button>
-            <button class="btn btn-secondary" onclick="showScreen('leaderboardScreen')">🏆 순위 보기</button>
+            <button class="btn btn-primary" onclick="login()">🎮 시작하기 (Start)</button>
+            <button class="btn btn-secondary" onclick="showScreen('leaderboardScreen')">🏆 순위 보기 (Ranking)</button>
 
             <div class="admin-link">
-                <a href="admin.html">🔧 관리자 모드</a>
+                <a href="admin.html">🔧 관리자 모드 (Admin)</a>
             </div>
         </div>
     </div>
@@ -533,6 +537,10 @@
     <!-- ===== 레벨 선택 화면 ===== -->
     <div class="screen" id="levelScreen">
         <div class="card">
+            <div style="text-align:center; margin-bottom:10px; font-size:11px;">
+                <span style="color:#667eea;">🎓 우송대학교 AI경영학과</span>
+                <span style="color:#f093fb; margin-left:5px;">게임기반 학습플랫폼</span>
+            </div>
             <h2 class="title">📚 레벨 선택</h2>
             <p class="subtitle">목표 토익 점수를 선택하세요</p>
 
@@ -583,6 +591,10 @@
 
     <!-- ===== 게임 화면 ===== -->
     <div class="screen game-screen" id="gameScreen">
+        <div style="flex-shrink:0; width:100%; padding:6px 10px; background:linear-gradient(90deg, rgba(102,126,234,0.3), rgba(240,147,251,0.3)); text-align:center; font-size:11px; letter-spacing:0.5px;">
+            <span style="color:#fff;">🎓 우송대학교 AI경영학과</span>
+            <span style="color:#ffd700; margin-left:8px;">게임기반 학습플랫폼</span>
+        </div>
         <div class="game-header">
             <div class="stat-box">
                 <div class="stat-label">레벨 점수</div>
@@ -625,6 +637,10 @@
     <!-- ===== 결과 화면 ===== -->
     <div class="screen" id="resultScreen">
         <div class="card result-card">
+            <div style="text-align:center; margin-bottom:10px; font-size:11px;">
+                <span style="color:#667eea;">🎓 우송대학교 AI경영학과</span>
+                <span style="color:#f093fb; margin-left:5px;">게임기반 학습플랫폼</span>
+            </div>
             <div class="result-icon" id="resultIcon">🎉</div>
             <h2 class="result-title" id="resultTitle">미션 성공!</h2>
 
@@ -663,6 +679,10 @@
     <!-- ===== 순위표 화면 ===== -->
     <div class="screen" id="leaderboardScreen">
         <div class="card leaderboard-card">
+            <div style="text-align:center; margin-bottom:10px; font-size:11px;">
+                <span style="color:#667eea;">🎓 우송대학교 AI경영학과</span>
+                <span style="color:#f093fb; margin-left:5px;">게임기반 학습플랫폼</span>
+            </div>
             <h2 class="title">🏆 명예의 전당</h2>
             <p class="subtitle">누적 총점 기준 순위</p>
 
@@ -806,10 +826,12 @@
             maxWrong: 5,            // 최대 틀린 횟수
             wrongWords: [],
             questionAnswered: false,
+            streak: 0,              // 연속 정답 카운터
             ship: { x: 0, y: 0, width: 40, height: 40, speed: 8 },
             bullets: [],
             enemies: [],
             particles: [],
+            confetti: [],           // 풍선폭죽 파티클
             keys: {},
             touchX: null,
             lastTime: 0,
@@ -946,6 +968,8 @@
             game.bullets = [];
             game.enemies = [];
             game.particles = [];
+            game.confetti = [];
+            game.streak = 0;
             game.questionAnswered = false;
             
             // 우주선 위치
@@ -1044,14 +1068,23 @@
             ]);
             
             // 모바일 반응형 블록 크기
-            const blockWidth = Math.max(100, 140 * game.scaleFactor);
-            const blockHeight = Math.max(45, 65 * game.scaleFactor);
+            const blockWidth = Math.max(80, 130 * game.scaleFactor);
+            const blockHeight = Math.max(40, 60 * game.scaleFactor);
             
-            const spacing = game.width / 5;
+            // 블록 간 간격
+            const gap = Math.max(8, 12 * game.scaleFactor);
+            
+            // 전체 블록들이 차지하는 총 너비
+            const totalBlocks = allOptions.length;
+            const totalWidth = (blockWidth * totalBlocks) + (gap * (totalBlocks - 1));
+            
+            // 화면 중앙 정렬을 위한 시작 X 좌표
+            const startX = (game.width - totalWidth) / 2;
+            
             allOptions.forEach((option, i) => {
                 game.enemies.push({
-                    x: spacing * (i + 1) - blockWidth / 2,
-                    y: -100 - i * 60,
+                    x: startX + i * (blockWidth + gap),
+                    y: -70 - i * 25,  // 약간 시차를 두고 내려옴
                     width: blockWidth,
                     height: blockHeight,
                     speed: 0.8 + Math.random() * 0.3,
@@ -1157,35 +1190,50 @@
                             createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, '#00ff88');
                             game.score += 100;
                             game.correctCount++;
+                            game.streak++;  // 연속 정답 증가
                             game.questionAnswered = true;
                             playSound(523, 0.3, 'sine');
                             
-                            // 다양한 칭찬 메시지
-                            const praises = [
-                                '🎉 정답! 대단해요!',
-                                '⭐ 완벽해요! 천재!',
-                                '🔥 불타는 실력!',
-                                '💯 정확해요! 최고!',
-                                '🚀 멋져요! 계속!',
-                                '👏 브라보! 훌륭해요!',
-                                '🏆 챔피언! 멋지다!',
-                                '✨ 반짝반짝 정답!',
-                                '💪 역시 실력자!',
-                                '🌟 스타 탄생!',
-                                '😎 쿨하게 정답!',
-                                '🎯 명중! 완벽!',
-                                '👍 굿! 잘했어요!',
-                                '💎 보석 같은 실력!',
-                                '🦸 영단어 히어로!'
-                            ];
-                            const praise = praises[Math.floor(Math.random() * praises.length)];
-                            showFeedback(praise + '\n+100점', '#4caf50');
+                            // 5연속 정답마다 풍선폭죽!
+                            if (game.streak > 0 && game.streak % 5 === 0) {
+                                createConfetti();
+                                // 레벨별 보너스 점수 (300=1000, 400=2000, ... 1000=8000)
+                                const bonusMultiplier = Math.floor((player.currentLevel - 300) / 100) + 1;
+                                const bonusScore = bonusMultiplier * 1000;
+                                game.score += bonusScore;
+                                showFeedback(`🎊🎈 ${game.streak}연속 정답! 🎈🎊\n🎁 +${bonusScore.toLocaleString()}점 보너스!`, '#ff6b9d');
+                                playSound(784, 0.3, 'sine');
+                                setTimeout(() => playSound(988, 0.3, 'sine'), 100);
+                                setTimeout(() => playSound(1175, 0.3, 'sine'), 200);
+                            } else {
+                                // 다양한 칭찬 메시지
+                                const praises = [
+                                    '🎉 정답! 대단해요!',
+                                    '⭐ 완벽해요! 천재!',
+                                    '🔥 불타는 실력!',
+                                    '💯 정확해요! 최고!',
+                                    '🚀 멋져요! 계속!',
+                                    '👏 브라보! 훌륭해요!',
+                                    '🏆 챔피언! 멋지다!',
+                                    '✨ 반짝반짝 정답!',
+                                    '💪 역시 실력자!',
+                                    '🌟 스타 탄생!',
+                                    '😎 쿨하게 정답!',
+                                    '🎯 명중! 완벽!',
+                                    '👍 굿! 잘했어요!',
+                                    '💎 보석 같은 실력!',
+                                    '🦸 영단어 히어로!'
+                                ];
+                                const praise = praises[Math.floor(Math.random() * praises.length)];
+                                showFeedback(praise + '\n+100점', '#4caf50');
+                            }
                             
                             setTimeout(() => nextQuestion(), 1000);
                         } else if (enemy.type === 'main') {
                             // 오답!
                             createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, '#ff4444');
                             game.wrongCount++;
+                            game.streak = 0;  // 연속 정답 리셋
                             game.wrongWords.push(game.currentWord);
                             game.questionAnswered = true;
                             playSound(200, 0.2, 'sawtooth');
@@ -1209,6 +1257,7 @@
             if (mainEnemyCount > 0 && allMainEnemiesGone && !game.questionAnswered) {
                 game.questionAnswered = true;
                 game.wrongCount++;
+                game.streak = 0;  // 연속 정답 리셋
                 game.wrongWords.push(game.currentWord);
                 
                 updateHeartsDisplay();
@@ -1230,6 +1279,16 @@
                 p.vy += 0.15;
                 p.life--;
                 return p.life > 0;
+            });
+            
+            // 풍선폭죽 업데이트
+            game.confetti = game.confetti.filter(c => {
+                c.x += c.vx;
+                c.y += c.vy;
+                c.vy += 0.1;  // 중력
+                c.rotation += c.rotationSpeed;
+                c.life--;
+                return c.life > 0;
             });
             
             // 적 제거
@@ -1254,6 +1313,42 @@
                     life: 30 + Math.random() * 20
                 });
             }
+        }
+
+        // 풍선폭죽 생성
+        function createConfetti() {
+            const colors = [
+                '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff',
+                '#5f27cd', '#00d2d3', '#ff9f43', '#ee5a24', '#1dd1a1',
+                '#ffd700', '#ff6b9d', '#c44569', '#f8b500', '#7bed9f'
+            ];
+            
+            // 화면 여러 위치에서 폭죽 발사
+            const launchPoints = [
+                { x: game.width * 0.2, y: game.height },
+                { x: game.width * 0.5, y: game.height },
+                { x: game.width * 0.8, y: game.height }
+            ];
+            
+            launchPoints.forEach(point => {
+                for (let i = 0; i < 30; i++) {
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const shape = Math.random() > 0.5 ? 'rect' : 'circle';
+                    
+                    game.confetti.push({
+                        x: point.x + (Math.random() - 0.5) * 50,
+                        y: point.y,
+                        vx: (Math.random() - 0.5) * 8,
+                        vy: -8 - Math.random() * 10,  // 위로 발사
+                        color: color,
+                        size: 5 + Math.random() * 8,
+                        shape: shape,
+                        rotation: Math.random() * 360,
+                        rotationSpeed: (Math.random() - 0.5) * 15,
+                        life: 80 + Math.random() * 40
+                    });
+                }
+            });
         }
 
         // ========================================
@@ -1326,6 +1421,26 @@
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life / 50;
                 ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+            });
+            ctx.globalAlpha = 1;
+            
+            // 풍선폭죽 (confetti)
+            game.confetti.forEach(c => {
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, c.life / 30);
+                ctx.fillStyle = c.color;
+                ctx.translate(c.x, c.y);
+                ctx.rotate(c.rotation * Math.PI / 180);
+                
+                if (c.shape === 'rect') {
+                    ctx.fillRect(-c.size/2, -c.size/4, c.size, c.size/2);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, c.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
             });
             ctx.globalAlpha = 1;
         }
