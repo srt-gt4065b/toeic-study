@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚀 토익 영단어 갤러그</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 50%, #0a0a15 100%);
+            color: white;
+        }
+
+        /* ===== 공통 스타일 ===== */
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .card {
+            background: rgba(26, 26, 46, 0.95);
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 450px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+
+        .title {
+            font-size: clamp(22px, 5vw, 32px);
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.7;
+            margin-bottom: 25px;
+            font-size: 13px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: #f093fb;
+        }
+
+        .input-group select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .btn-success { background: linear-gradient(135deg, #4caf50, #8bc34a); }
+        .btn-warning { background: linear-gradient(135deg, #ff9800, #ffb74d); }
+        .btn-danger { background: linear-gradient(135deg, #f44336, #ff5722); }
+        .btn-secondary { background: linear-gradient(135deg, #455a64, #78909c); }
+        .btn-small { padding: 10px 18px; font-size: 13px; width: auto; }
+
+        .logo {
+            font-size: 50px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            opacity: 0.5;
+        }
+
+        .admin-link a {
+            color: #667eea;
+        }
+
+        /* ===== 레벨 선택 ===== */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .level-btn {
+            padding: 15px 10px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .level-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: scale(1.02);
+        }
+
+        .level-btn.selected {
+            background: #667eea;
+            border-color: #f093fb;
+        }
+
+        .level-btn .level-name {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .level-btn .level-desc {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 3px;
+        }
+
+        /* ===== 게임 화면 ===== */
+        .game-screen {
+            padding: 0;
+            flex-direction: column;
+        }
+
+        .game-header {
+            flex-shrink: 0;
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-box {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-label { font-size: 10px; opacity: 0.7; }
+        .stat-value { font-size: 16px; font-weight: bold; }
+        .stat-value.score { color: #ffd700; }
+        .stat-value.wrong { color: #ff6b6b; }
+
+        .question-box {
+            flex-shrink: 0;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
+            text-align: center;
+            border-bottom: 2px solid rgba(102,126,234,0.5);
+        }
+
+        .word-label { font-size: 10px; opacity: 0.8; margin-bottom: 2px; }
+        .word-korean { font-size: clamp(20px, 5vw, 28px); font-weight: bold; }
+
+        .game-canvas-container {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #gameCanvas { display: block; width: 100%; height: 100%; }
+
+        /* 하트 표시 */
+        .hearts-display {
+            display: flex;
+            gap: 3px;
+        }
+
+        .heart {
+            font-size: 18px;
+        }
+
+        .heart.lost {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+
+        /* ===== 모바일 컨트롤 ===== */
+        .mobile-controls {
+            display: none;
+            flex-shrink: 0;
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.7);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls { display: flex; justify-content: space-between; align-items: center; }
+        }
+
+        .control-left {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #667eea;
+            background: rgba(102, 126, 234, 0.3);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ctrl-btn:active {
+            background: #667eea;
+        }
+
+        .fire-btn {
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #f44336, #ff5722);
+            border-color: #ff5722;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* ===== 피드백 팝업 ===== */
+        .feedback-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            padding: 25px 40px;
+            border-radius: 20px;
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: bold;
+            text-align: center;
+            z-index: 100;
+            transition: transform 0.3s;
+            white-space: pre-line;
+            line-height: 1.4;
+        }
+
+        .feedback-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* ===== 결과 화면 ===== */
+        .result-card {
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .result-icon {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .result-title {
+            font-size: clamp(22px, 5vw, 28px);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title.success { color: #4caf50; }
+        .result-title.fail { color: #f44336; }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .result-stat {
+            text-align: center;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .result-stat .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .result-stat .label {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .wrong-words-section {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .wrong-words-title {
+            font-size: 14px;
+            color: #ff6b6b;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wrong-word-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .wrong-word-item .word {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .wrong-word-item .meaning {
+            color: #00ff88;
+        }
+
+        /* ===== 순위표 ===== */
+        .leaderboard-card {
+            max-width: 550px;
+            max-height: 85vh;
+        }
+
+        .lb-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .lb-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .lb-item:nth-child(1) { background: rgba(255, 215, 0, 0.2); }
+        .lb-item:nth-child(2) { background: rgba(192, 192, 192, 0.2); }
+        .lb-item:nth-child(3) { background: rgba(205, 127, 50, 0.2); }
+
+        .lb-rank { width: 40px; font-weight: bold; font-size: 16px; }
+        .lb-info { flex: 1; }
+        .lb-name { font-weight: bold; font-size: 14px; }
+        .lb-detail { font-size: 11px; opacity: 0.7; }
+        .lb-score { width: 80px; text-align: right; color: #ffd700; font-weight: bold; font-size: 16px; }
+
+        /* ===== 로딩 ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show { display: flex; }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== 레벨 진행 표시 ===== */
+        .level-progress {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .level-progress .current-level {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .level-progress .total-score {
+            font-size: 13px;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+
+        /* ===== 스크롤바 ===== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+
+        /* ===== 반응형 ===== */
+        @media (max-width: 400px) {
+            .card { padding: 18px; }
+            .level-grid { gap: 8px; }
+            .level-btn { padding: 12px 8px; }
+            .level-btn .level-name { font-size: 13px; }
+            .result-stats { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .result-stat { padding: 8px; }
+            .result-stat .value { font-size: 20px; }
+            .ctrl-btn { width: 50px; height: 50px; font-size: 20px; }
+            .fire-btn { width: 65px; height: 65px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 피드백 팝업 -->
+    <div class="feedback-popup" id="feedbackPopup"></div>
+
+    <!-- ===== 로그인 화면 ===== -->
+    <div class="screen active" id="loginScreen">
+        <div class="card">
+            <div class="logo">🚀</div>
+            <h1 class="title">토익 영단어 갤러그</h1>
+            <p class="subtitle">Woosong AI Management</p>
+
+            <div class="input-group">
+                <label>학번</label>
+                <input type="text" id="studentId" placeholder="학번 입력" maxlength="20">
+            </div>
+
+            <div class="input-group">
+                <label>이름</label>
+                <input type="text" id="playerName" placeholder="이름 입력" maxlength="10">
+            </div>
+
+            <button class="btn btn-primary" onclick="login()">🎮 시작하기</button>
+            <button class="btn btn-secondary" onclick="showScreen('leaderboardScreen')">🏆 순위 보기</button>
+
+            <div class="admin-link">
+                <a href="admin.html">🔧 관리자 모드</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 레벨 선택 화면 ===== -->
+    <div class="screen" id="levelScreen">
+        <div class="card">
+            <h2 class="title">📚 레벨 선택</h2>
+            <p class="subtitle">목표 토익 점수를 선택하세요</p>
+
+            <!-- 누적 점수 표시 -->
+            <div class="level-progress" id="levelProgressBox" style="display:none;">
+                <div class="current-level">현재 진행: <span id="currentLevelText">-</span></div>
+                <div class="total-score">🏆 누적 점수: <span id="totalScoreText">0</span>점</div>
+            </div>
+
+            <div class="level-grid">
+                <div class="level-btn" onclick="selectLevel(300)">
+                    <div class="level-name">300점</div>
+                    <div class="level-desc">입문</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(400)">
+                    <div class="level-name">400점</div>
+                    <div class="level-desc">기초</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(500)">
+                    <div class="level-name">500점</div>
+                    <div class="level-desc">초급</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(600)">
+                    <div class="level-name">600점</div>
+                    <div class="level-desc">중급</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(700)">
+                    <div class="level-name">700점</div>
+                    <div class="level-desc">중상급</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(800)">
+                    <div class="level-name">800점</div>
+                    <div class="level-desc">상급</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(900)">
+                    <div class="level-name">900점</div>
+                    <div class="level-desc">고급</div>
+                </div>
+                <div class="level-btn" onclick="selectLevel(1000)">
+                    <div class="level-name">990+</div>
+                    <div class="level-desc">만점</div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showScreen('loginScreen')">← 처음으로</button>
+        </div>
+    </div>
+
+    <!-- ===== 게임 화면 ===== -->
+    <div class="screen game-screen" id="gameScreen">
+        <div class="game-header">
+            <div class="stat-box">
+                <div class="stat-label">레벨 점수</div>
+                <div class="stat-value score" id="scoreDisplay">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">문제</div>
+                <div class="stat-value" id="questionDisplay">1/?</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">남은 기회</div>
+                <div class="hearts-display" id="heartsDisplay">
+                    <span class="heart">❤️</span>
+                    <span class="heart">❤️</span>
+                    <span class="heart">❤️</span>
+                    <span class="heart">❤️</span>
+                    <span class="heart">❤️</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <div class="word-label">이 뜻을 가진 영단어는?</div>
+            <div class="word-korean" id="koreanWord">-</div>
+        </div>
+
+        <div class="game-canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="mobile-controls">
+            <div class="control-left">
+                <button class="ctrl-btn" id="leftBtn">◀</button>
+                <button class="ctrl-btn" id="rightBtn">▶</button>
+            </div>
+            <button class="ctrl-btn fire-btn" id="fireBtn">FIRE</button>
+        </div>
+    </div>
+
+    <!-- ===== 결과 화면 ===== -->
+    <div class="screen" id="resultScreen">
+        <div class="card result-card">
+            <div class="result-icon" id="resultIcon">🎉</div>
+            <h2 class="result-title" id="resultTitle">미션 성공!</h2>
+
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="value" id="resultLevelScore">0</div>
+                    <div class="label">레벨 점수</div>
+                </div>
+                <div class="result-stat">
+                    <div class="value" id="resultCorrect">0</div>
+                    <div class="label">정답</div>
+                </div>
+                <div class="result-stat">
+                    <div class="value" id="resultWrong">0</div>
+                    <div class="label">오답</div>
+                </div>
+            </div>
+
+            <!-- 누적 점수 -->
+            <div class="level-progress">
+                <div class="total-score" style="font-size:16px;">🏆 누적 총점: <span id="resultTotalScore" style="font-size:22px;">0</span>점</div>
+            </div>
+
+            <!-- 틀린 단어 복습 -->
+            <div class="wrong-words-section" id="wrongWordsSection" style="display:none;">
+                <div class="wrong-words-title">📚 틀린 단어 복습 (다시 틀리지 않도록!)</div>
+                <div id="wrongWordsList"></div>
+            </div>
+
+            <div id="resultButtons">
+                <!-- 동적으로 버튼 추가 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 순위표 화면 ===== -->
+    <div class="screen" id="leaderboardScreen">
+        <div class="card leaderboard-card">
+            <h2 class="title">🏆 명예의 전당</h2>
+            <p class="subtitle">누적 총점 기준 순위</p>
+
+            <div class="lb-list" id="leaderboardList">
+                <!-- 동적 로드 -->
+            </div>
+
+            <button class="btn btn-secondary" onclick="goBackFromLeaderboard()" style="margin-top:15px;">← 돌아가기</button>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // Firebase 설정
+        // ========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA6NONPoeAGHcMLkLwPunduIGqmODUQnAQ",
+  authDomain: "toeic-voca-30c67.firebaseapp.com",
+  databaseURL: "https://toeic-voca-30c67-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "toeic-voca-30c67",
+  storageBucket: "toeic-voca-30c67.firebasestorage.app",
+  messagingSenderId: "740332360254",
+  appId: "1:740332360254:web:c04edc2988a6e6f63f776f",
+  measurementId: "G-9E8HXE4LJ7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ========================================
+        // 기본 단어 데이터
+        // ========================================
+        const defaultWords = {
+            300: [
+                {word: 'book', meaning: '책'}, {word: 'water', meaning: '물'},
+                {word: 'food', meaning: '음식'}, {word: 'work', meaning: '일하다'},
+                {word: 'time', meaning: '시간'}, {word: 'money', meaning: '돈'},
+                {word: 'house', meaning: '집'}, {word: 'family', meaning: '가족'},
+                {word: 'friend', meaning: '친구'}, {word: 'school', meaning: '학교'},
+                {word: 'phone', meaning: '전화'}, {word: 'email', meaning: '이메일'},
+                {word: 'meeting', meaning: '회의'}, {word: 'office', meaning: '사무실'},
+                {word: 'company', meaning: '회사'}, {word: 'customer', meaning: '고객'}
+            ],
+            400: [
+                {word: 'available', meaning: '이용 가능한'}, {word: 'provide', meaning: '제공하다'},
+                {word: 'include', meaning: '포함하다'}, {word: 'require', meaning: '요구하다'},
+                {word: 'schedule', meaning: '일정'}, {word: 'confirm', meaning: '확인하다'},
+                {word: 'attend', meaning: '참석하다'}, {word: 'contact', meaning: '연락하다'},
+                {word: 'department', meaning: '부서'}, {word: 'employee', meaning: '직원'},
+                {word: 'manager', meaning: '관리자'}, {word: 'position', meaning: '직위'},
+                {word: 'experience', meaning: '경험'}, {word: 'opportunity', meaning: '기회'},
+                {word: 'improve', meaning: '개선하다'}, {word: 'develop', meaning: '개발하다'}
+            ],
+            500: [
+                {word: 'announce', meaning: '발표하다'}, {word: 'approximately', meaning: '대략'},
+                {word: 'arrange', meaning: '준비하다'}, {word: 'budget', meaning: '예산'},
+                {word: 'candidate', meaning: '후보자'}, {word: 'competitive', meaning: '경쟁력 있는'},
+                {word: 'currently', meaning: '현재'}, {word: 'deadline', meaning: '마감일'},
+                {word: 'determine', meaning: '결정하다'}, {word: 'effective', meaning: '효과적인'},
+                {word: 'establish', meaning: '설립하다'}, {word: 'facility', meaning: '시설'},
+                {word: 'generate', meaning: '생성하다'}, {word: 'implement', meaning: '실행하다'},
+                {word: 'inventory', meaning: '재고'}, {word: 'negotiate', meaning: '협상하다'}
+            ],
+            600: [
+                {word: 'accomplish', meaning: '성취하다'}, {word: 'adequate', meaning: '적절한'},
+                {word: 'anticipate', meaning: '예상하다'}, {word: 'apparent', meaning: '명백한'},
+                {word: 'comprehensive', meaning: '포괄적인'}, {word: 'consecutive', meaning: '연속적인'},
+                {word: 'considerable', meaning: '상당한'}, {word: 'consistently', meaning: '일관되게'},
+                {word: 'demonstrate', meaning: '보여주다'}, {word: 'dimension', meaning: '차원'},
+                {word: 'distribute', meaning: '배포하다'}, {word: 'eligible', meaning: '자격이 있는'},
+                {word: 'enhance', meaning: '향상시키다'}, {word: 'enthusiastic', meaning: '열정적인'},
+                {word: 'essential', meaning: '필수적인'}, {word: 'exceptional', meaning: '뛰어난'}
+            ],
+            700: [
+                {word: 'accommodate', meaning: '수용하다'}, {word: 'acquisition', meaning: '인수'},
+                {word: 'adjacent', meaning: '인접한'}, {word: 'aggregate', meaning: '합계'},
+                {word: 'alleviate', meaning: '완화하다'}, {word: 'anticipate', meaning: '예상하다'},
+                {word: 'autonomous', meaning: '자율적인'}, {word: 'benchmark', meaning: '기준점'},
+                {word: 'consolidate', meaning: '통합하다'}, {word: 'contingency', meaning: '비상사태'},
+                {word: 'deteriorate', meaning: '악화되다'}, {word: 'discretion', meaning: '재량'},
+                {word: 'diversify', meaning: '다양화하다'}, {word: 'elaborate', meaning: '정교한'},
+                {word: 'encompass', meaning: '포함하다'}, {word: 'expedite', meaning: '신속히 처리하다'}
+            ],
+            800: [
+                {word: 'meticulous', meaning: '꼼꼼한'}, {word: 'pragmatic', meaning: '실용적인'},
+                {word: 'unprecedented', meaning: '전례 없는'}, {word: 'substantiate', meaning: '입증하다'},
+                {word: 'circumvent', meaning: '우회하다'}, {word: 'delineate', meaning: '묘사하다'},
+                {word: 'exacerbate', meaning: '악화시키다'}, {word: 'extrapolate', meaning: '추정하다'},
+                {word: 'inadvertent', meaning: '부주의한'}, {word: 'juxtapose', meaning: '나란히 놓다'},
+                {word: 'mitigate', meaning: '완화시키다'}, {word: 'corroborate', meaning: '확증하다'},
+                {word: 'proliferate', meaning: '급증하다'}, {word: 'scrutinize', meaning: '면밀히 조사하다'},
+                {word: 'superfluous', meaning: '불필요한'}, {word: 'ubiquitous', meaning: '어디에나 있는'}
+            ],
+            900: [
+                {word: 'ameliorate', meaning: '개선하다'}, {word: 'ancillary', meaning: '보조적인'},
+                {word: 'antipathy', meaning: '반감'}, {word: 'assiduous', meaning: '근면한'},
+                {word: 'belligerent', meaning: '호전적인'}, {word: 'burgeoning', meaning: '급성장하는'},
+                {word: 'capitulate', meaning: '항복하다'}, {word: 'cogent', meaning: '설득력 있는'},
+                {word: 'conundrum', meaning: '난제'}, {word: 'deleterious', meaning: '해로운'},
+                {word: 'egregious', meaning: '지독한'}, {word: 'ephemeral', meaning: '일시적인'},
+                {word: 'fastidious', meaning: '까다로운'}, {word: 'fortuitous', meaning: '우연한'},
+                {word: 'garrulous', meaning: '수다스러운'}, {word: 'hackneyed', meaning: '진부한'}
+            ],
+            1000: [
+                {word: 'abstruse', meaning: '난해한'}, {word: 'acrimonious', meaning: '신랄한'},
+                {word: 'apotheosis', meaning: '극치'}, {word: 'churlish', meaning: '무례한'},
+                {word: 'conflagration', meaning: '대화재'}, {word: 'contrite', meaning: '뉘우치는'},
+                {word: 'desiccate', meaning: '건조시키다'}, {word: 'dilatory', meaning: '지연시키는'},
+                {word: 'enervate', meaning: '기력을 빼다'}, {word: 'equanimity', meaning: '평정심'},
+                {word: 'loquacious', meaning: '말이 많은'}, {word: 'magnanimous', meaning: '관대한'},
+                {word: 'obsequious', meaning: '아첨하는'}, {word: 'perfunctory', meaning: '형식적인'},
+                {word: 'recalcitrant', meaning: '반항적인'}, {word: 'sycophant', meaning: '아첨꾼'}
+            ]
+        };
+
+        // ========================================
+        // 게임 상태
+        // ========================================
+        let player = {
+            studentId: '',
+            name: '',
+            totalScore: 0,          // 누적 총점
+            currentLevel: 300,
+            passedLevels: []        // 통과한 레벨들
+        };
+
+        let game = {
+            canvas: null,
+            ctx: null,
+            width: 0,
+            height: 0,
+            running: false,
+            words: [],
+            usedWordIndices: [],    // 이미 출제한 단어 인덱스
+            currentWord: null,
+            questionNumber: 0,
+            totalQuestions: 0,      // 해당 레벨 총 문제 수
+            score: 0,               // 현재 레벨 점수
+            correctCount: 0,
+            wrongCount: 0,          // 틀린 횟수 (5번 되면 게임오버)
+            maxWrong: 5,            // 최대 틀린 횟수
+            wrongWords: [],
+            questionAnswered: false,
+            ship: { x: 0, y: 0, width: 40, height: 40, speed: 8 },
+            bullets: [],
+            enemies: [],
+            particles: [],
+            keys: {},
+            touchX: null,
+            lastTime: 0,
+            animFrame: null,
+            scaleFactor: 1          // 모바일 스케일 팩터
+        };
+
+        // ========================================
+        // 화면 전환
+        // ========================================
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            if (screenId === 'leaderboardScreen') {
+                loadLeaderboard();
+            }
+            if (screenId === 'levelScreen') {
+                updateLevelProgressDisplay();
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function showFeedback(text, color) {
+            const popup = document.getElementById('feedbackPopup');
+            popup.textContent = text;
+            popup.style.background = color;
+            popup.classList.add('show');
+            setTimeout(() => popup.classList.remove('show'), 1200);
+        }
+
+        // ========================================
+        // 로그인
+        // ========================================
+        function login() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const name = document.getElementById('playerName').value.trim();
+            
+            if (!studentId || !name) {
+                showFeedback('학번과 이름을 입력하세요', '#f44336');
+                return;
+            }
+            
+            player.studentId = studentId;
+            player.name = name;
+            player.totalScore = 0;
+            player.passedLevels = [];
+            
+            showScreen('levelScreen');
+        }
+
+        // ========================================
+        // 레벨 선택
+        // ========================================
+        function selectLevel(level) {
+            player.currentLevel = level;
+            
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('selected'));
+            event.target.closest('.level-btn').classList.add('selected');
+            
+            startGame();
+        }
+
+        function updateLevelProgressDisplay() {
+            const box = document.getElementById('levelProgressBox');
+            if (player.totalScore > 0 || player.passedLevels.length > 0) {
+                box.style.display = 'block';
+                document.getElementById('currentLevelText').textContent = 
+                    player.passedLevels.length > 0 ? `${player.passedLevels[player.passedLevels.length - 1]}점 통과!` : '-';
+                document.getElementById('totalScoreText').textContent = player.totalScore;
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        // ========================================
+        // 게임 시작
+        // ========================================
+        async function startGame() {
+            showLoading(true);
+            
+            try {
+                // Firebase에서 단어 로드
+                const snapshot = await database.ref(`toeic_galaga/words/level${player.currentLevel}`).once('value');
+                
+                if (snapshot.exists()) {
+                    game.words = [];
+                    snapshot.forEach(child => {
+                        game.words.push(child.val());
+                    });
+                } else {
+                    game.words = [...defaultWords[player.currentLevel]];
+                }
+                
+                if (game.words.length < 4) {
+                    showFeedback('단어가 부족합니다', '#f44336');
+                    showLoading(false);
+                    return;
+                }
+                
+                initGame();
+                showLoading(false);
+                showScreen('gameScreen');
+                requestAnimationFrame(gameLoop);
+                
+            } catch (error) {
+                console.error('Error loading words:', error);
+                game.words = [...defaultWords[player.currentLevel]];
+                initGame();
+                showLoading(false);
+                showScreen('gameScreen');
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function initGame() {
+            game.canvas = document.getElementById('gameCanvas');
+            game.ctx = game.canvas.getContext('2d');
+            
+            resizeCanvas();
+            
+            // 게임 상태 초기화
+            game.running = true;
+            game.score = 0;
+            game.correctCount = 0;
+            game.wrongCount = 0;
+            game.questionNumber = 0;
+            game.totalQuestions = game.words.length;
+            game.usedWordIndices = [];
+            game.wrongWords = [];
+            game.bullets = [];
+            game.enemies = [];
+            game.particles = [];
+            game.questionAnswered = false;
+            
+            // 우주선 위치
+            game.ship.x = game.width / 2 - game.ship.width / 2;
+            game.ship.y = game.height - game.ship.height - 20;
+            
+            // 하트 업데이트
+            updateHeartsDisplay();
+            
+            // 첫 문제 시작
+            nextQuestion();
+            
+            // 이벤트 리스너
+            setupControls();
+        }
+
+        function resizeCanvas() {
+            const container = game.canvas.parentElement;
+            game.canvas.width = container.clientWidth;
+            game.canvas.height = container.clientHeight;
+            game.width = game.canvas.width;
+            game.height = game.canvas.height;
+            
+            // 모바일 스케일 팩터 계산 (기준: 400px)
+            game.scaleFactor = Math.min(1, game.width / 400);
+        }
+
+        // ========================================
+        // 하트 표시 업데이트
+        // ========================================
+        function updateHeartsDisplay() {
+            const container = document.getElementById('heartsDisplay');
+            let html = '';
+            for (let i = 0; i < game.maxWrong; i++) {
+                if (i < game.maxWrong - game.wrongCount) {
+                    html += '<span class="heart">❤️</span>';
+                } else {
+                    html += '<span class="heart lost">🖤</span>';
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        // ========================================
+        // 다음 문제
+        // ========================================
+        function nextQuestion() {
+            // 모든 문제를 다 풀었는지 확인
+            if (game.usedWordIndices.length >= game.words.length) {
+                // 미션 성공!
+                missionSuccess();
+                return;
+            }
+            
+            game.questionNumber++;
+            game.questionAnswered = false;
+            game.enemies = [];
+            game.bullets = [];
+            
+            // 아직 안 나온 단어 중에서 선택
+            let availableIndices = [];
+            for (let i = 0; i < game.words.length; i++) {
+                if (!game.usedWordIndices.includes(i)) {
+                    availableIndices.push(i);
+                }
+            }
+            
+            const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            game.usedWordIndices.push(randomIndex);
+            game.currentWord = game.words[randomIndex];
+            
+            // UI 업데이트
+            document.getElementById('koreanWord').textContent = game.currentWord.meaning;
+            document.getElementById('scoreDisplay').textContent = game.score;
+            document.getElementById('questionDisplay').textContent = `${game.questionNumber}/${game.totalQuestions}`;
+            
+            // 적 생성
+            spawnEnemies();
+        }
+
+        // ========================================
+        // 적 생성 (영어 단어 블록)
+        // ========================================
+        function spawnEnemies() {
+            const correctWord = game.currentWord.word;
+            
+            // 오답 단어 선택
+            const otherWords = game.words
+                .filter(w => w.word !== correctWord)
+                .map(w => w.word);
+            const wrongWords = shuffleArray([...otherWords]).slice(0, 3);
+            
+            const allOptions = shuffleArray([
+                { text: correctWord, isCorrect: true },
+                ...wrongWords.map(w => ({ text: w, isCorrect: false }))
+            ]);
+            
+            // 모바일 반응형 블록 크기
+            const blockWidth = Math.max(100, 140 * game.scaleFactor);
+            const blockHeight = Math.max(45, 65 * game.scaleFactor);
+            
+            const spacing = game.width / 5;
+            allOptions.forEach((option, i) => {
+                game.enemies.push({
+                    x: spacing * (i + 1) - blockWidth / 2,
+                    y: -100 - i * 60,
+                    width: blockWidth,
+                    height: blockHeight,
+                    speed: 0.8 + Math.random() * 0.3,
+                    text: option.text,
+                    isCorrect: option.isCorrect,
+                    type: 'main',
+                    color: '#3949ab',
+                    glowColor: '#7986cb',
+                    destroyed: false,
+                    wobbleOffset: Math.random() * Math.PI * 2
+                });
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // ========================================
+        // 발사
+        // ========================================
+        function shoot() {
+            if (!game.running || game.bullets.length >= 5) return;
+            
+            game.bullets.push({
+                x: game.ship.x + game.ship.width / 2 - 3,
+                y: game.ship.y,
+                width: 6,
+                height: 15,
+                speed: 12
+            });
+            
+            playSound(800, 0.1, 'square');
+        }
+
+        // ========================================
+        // 게임 루프
+        // ========================================
+        function gameLoop(timestamp) {
+            if (!game.running) return;
+            
+            const dt = timestamp - game.lastTime;
+            game.lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            game.animFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            // 우주선 이동
+            if (game.keys['ArrowLeft'] || game.keys['KeyA']) {
+                game.ship.x -= game.ship.speed;
+            }
+            if (game.keys['ArrowRight'] || game.keys['KeyD']) {
+                game.ship.x += game.ship.speed;
+            }
+            
+            // 터치 이동
+            if (game.touchX !== null) {
+                const targetX = game.touchX - game.ship.width / 2;
+                game.ship.x += (targetX - game.ship.x) * 0.15;
+            }
+            
+            // 경계 체크
+            game.ship.x = Math.max(0, Math.min(game.width - game.ship.width, game.ship.x));
+            
+            // 총알 이동
+            game.bullets = game.bullets.filter(b => {
+                b.y -= b.speed;
+                return b.y > -b.height;
+            });
+            
+            // 적 이동 및 충돌 체크
+            let mainEnemyCount = 0;
+            let allMainEnemiesGone = true;
+            
+            game.enemies.forEach(enemy => {
+                if (enemy.destroyed) return;
+                
+                if (enemy.type === 'main') {
+                    mainEnemyCount++;
+                    if (enemy.y < game.height) {
+                        allMainEnemiesGone = false;
+                    }
+                }
+                
+                enemy.y += enemy.speed;
+                enemy.x += Math.sin(Date.now() / 500 + enemy.wobbleOffset) * 0.5;
+                
+                // 충돌 체크
+                game.bullets.forEach((bullet, bi) => {
+                    if (checkCollision(bullet, enemy)) {
+                        game.bullets.splice(bi, 1);
+                        enemy.destroyed = true;
+                        
+                        if (enemy.isCorrect) {
+                            createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, '#00ff88');
+                            game.score += 100;
+                            game.correctCount++;
+                            game.questionAnswered = true;
+                            playSound(523, 0.3, 'sine');
+                            
+                            // 다양한 칭찬 메시지
+                            const praises = [
+                                '🎉 정답! 대단해요!',
+                                '⭐ 완벽해요! 천재!',
+                                '🔥 불타는 실력!',
+                                '💯 정확해요! 최고!',
+                                '🚀 멋져요! 계속!',
+                                '👏 브라보! 훌륭해요!',
+                                '🏆 챔피언! 멋지다!',
+                                '✨ 반짝반짝 정답!',
+                                '💪 역시 실력자!',
+                                '🌟 스타 탄생!',
+                                '😎 쿨하게 정답!',
+                                '🎯 명중! 완벽!',
+                                '👍 굿! 잘했어요!',
+                                '💎 보석 같은 실력!',
+                                '🦸 영단어 히어로!'
+                            ];
+                            const praise = praises[Math.floor(Math.random() * praises.length)];
+                            showFeedback(praise + '\n+100점', '#4caf50');
+                            
+                            setTimeout(() => nextQuestion(), 1000);
+                        } else if (enemy.type === 'main') {
+                            // 오답!
+                            createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, '#ff4444');
+                            game.wrongCount++;
+                            game.wrongWords.push(game.currentWord);
+                            game.questionAnswered = true;
+                            playSound(200, 0.2, 'sawtooth');
+                            
+                            updateHeartsDisplay();
+                            
+                            // 5번 틀리면 게임 오버
+                            if (game.wrongCount >= game.maxWrong) {
+                                showFeedback('💔 기회를 모두 잃었어요!', '#f44336');
+                                setTimeout(() => gameOver(), 1500);
+                            } else {
+                                showFeedback(`❌ 오답!\n정답: ${game.currentWord.word}\n남은 기회: ${game.maxWrong - game.wrongCount}`, '#f44336');
+                                setTimeout(() => nextQuestion(), 1500);
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // 모든 단어가 화면 밖으로 나갔을 때 (시간 초과)
+            if (mainEnemyCount > 0 && allMainEnemiesGone && !game.questionAnswered) {
+                game.questionAnswered = true;
+                game.wrongCount++;
+                game.wrongWords.push(game.currentWord);
+                
+                updateHeartsDisplay();
+                
+                if (game.wrongCount >= game.maxWrong) {
+                    showFeedback('💔 기회를 모두 잃었어요!', '#f44336');
+                    setTimeout(() => gameOver(), 1500);
+                } else {
+                    showFeedback(`⏰ 시간 초과!\n정답: ${game.currentWord.word}\n남은 기회: ${game.maxWrong - game.wrongCount}`, '#ff9800');
+                    playSound(150, 0.3, 'sawtooth');
+                    setTimeout(() => nextQuestion(), 1500);
+                }
+            }
+            
+            // 파티클 업데이트
+            game.particles = game.particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15;
+                p.life--;
+                return p.life > 0;
+            });
+            
+            // 적 제거
+            game.enemies = game.enemies.filter(e => !e.destroyed && e.y < game.height + 100);
+        }
+
+        function checkCollision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 20; i++) {
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: color,
+                    life: 30 + Math.random() * 20
+                });
+            }
+        }
+
+        // ========================================
+        // 렌더링
+        // ========================================
+        function render() {
+            const ctx = game.ctx;
+            
+            // 배경
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, game.width, game.height);
+            
+            // 별
+            drawStars();
+            
+            // 적 (단어 블록)
+            game.enemies.forEach(enemy => {
+                if (enemy.destroyed) return;
+                
+                ctx.save();
+                ctx.shadowColor = enemy.glowColor;
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = enemy.color;
+                
+                const r = 10;
+                ctx.beginPath();
+                ctx.moveTo(enemy.x + r, enemy.y);
+                ctx.lineTo(enemy.x + enemy.width - r, enemy.y);
+                ctx.quadraticCurveTo(enemy.x + enemy.width, enemy.y, enemy.x + enemy.width, enemy.y + r);
+                ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height - r);
+                ctx.quadraticCurveTo(enemy.x + enemy.width, enemy.y + enemy.height, enemy.x + enemy.width - r, enemy.y + enemy.height);
+                ctx.lineTo(enemy.x + r, enemy.y + enemy.height);
+                ctx.quadraticCurveTo(enemy.x, enemy.y + enemy.height, enemy.x, enemy.y + enemy.height - r);
+                ctx.lineTo(enemy.x, enemy.y + r);
+                ctx.quadraticCurveTo(enemy.x, enemy.y, enemy.x + r, enemy.y);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff';
+                
+                // 반응형 글씨 크기
+                const fontSize = Math.max(16, Math.floor(22 * game.scaleFactor));
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(enemy.text, enemy.x + enemy.width/2, enemy.y + enemy.height/2);
+                ctx.restore();
+            });
+            
+            // 총알
+            game.bullets.forEach(bullet => {
+                ctx.save();
+                ctx.shadowColor = '#00ffff';
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = '#00ffff';
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                ctx.restore();
+            });
+            
+            // 우주선
+            drawShip();
+            
+            // 파티클
+            game.particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 50;
+                ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawStars() {
+            const ctx = game.ctx;
+            const time = Date.now() / 1000;
+            
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 137.5) % game.width;
+                const y = ((i * 73.3 + time * 20) % game.height);
+                const brightness = 0.3 + Math.sin(time * 2 + i) * 0.2;
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+        }
+
+        function drawShip() {
+            const ctx = game.ctx;
+            const x = game.ship.x;
+            const y = game.ship.y;
+            const w = game.ship.width;
+            const h = game.ship.height;
+            
+            ctx.save();
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 20;
+            
+            // 본체
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(x + w/2, y);
+            ctx.lineTo(x + w, y + h);
+            ctx.lineTo(x + w/2, y + h - 10);
+            ctx.lineTo(x, y + h);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 조종석
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x + w/2, y + h/2, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 엔진
+            ctx.fillStyle = '#00ffff';
+            const flicker = Math.sin(Date.now() / 50) * 3;
+            ctx.fillRect(x + w/2 - 3, y + h - 5 + flicker, 6, 8 + flicker);
+            
+            ctx.restore();
+        }
+
+        // ========================================
+        // 미션 성공
+        // ========================================
+        function missionSuccess() {
+            game.running = false;
+            cancelAnimationFrame(game.animFrame);
+            
+            // 레벨 점수를 누적 점수에 추가
+            player.totalScore += game.score;
+            player.passedLevels.push(player.currentLevel);
+            
+            // Firebase에 점수 저장
+            saveScore();
+            
+            // 결과 화면 표시
+            document.getElementById('resultIcon').textContent = '🎉';
+            document.getElementById('resultTitle').textContent = '🏆 미션 성공!';
+            document.getElementById('resultTitle').className = 'result-title success';
+            document.getElementById('resultLevelScore').textContent = game.score;
+            document.getElementById('resultCorrect').textContent = game.correctCount;
+            document.getElementById('resultWrong').textContent = game.wrongCount;
+            document.getElementById('resultTotalScore').textContent = player.totalScore;
+            
+            // 틀린 단어 표시
+            const wrongSection = document.getElementById('wrongWordsSection');
+            if (game.wrongWords.length > 0) {
+                wrongSection.style.display = 'block';
+                document.getElementById('wrongWordsList').innerHTML = game.wrongWords.map(w => `
+                    <div class="wrong-word-item">
+                        <span class="word">${w.word}</span>
+                        <span class="meaning">${w.meaning}</span>
+                    </div>
+                `).join('');
+            } else {
+                wrongSection.style.display = 'none';
+            }
+            
+            // 버튼 구성
+            const nextLevel = getNextLevel(player.currentLevel);
+            let buttonsHtml = '';
+            
+            if (nextLevel) {
+                buttonsHtml += `<button class="btn btn-success" onclick="continueToNextLevel(${nextLevel})">🚀 다음 레벨 (${nextLevel}점) 도전!</button>`;
+            } else {
+                buttonsHtml += `<button class="btn btn-success" disabled>🎊 모든 레벨 완료!</button>`;
+            }
+            
+            buttonsHtml += `
+                <button class="btn btn-primary" onclick="restartLevel()">🔄 이 레벨 다시하기</button>
+                <button class="btn btn-secondary" onclick="showScreen('levelScreen')">📚 레벨 선택</button>
+                <button class="btn btn-warning" onclick="showScreen('leaderboardScreen')">🏆 순위 보기</button>
+            `;
+            
+            document.getElementById('resultButtons').innerHTML = buttonsHtml;
+            
+            showScreen('resultScreen');
+        }
+
+        function getNextLevel(currentLevel) {
+            const levels = [300, 400, 500, 600, 700, 800, 900, 1000];
+            const currentIndex = levels.indexOf(currentLevel);
+            if (currentIndex < levels.length - 1) {
+                return levels[currentIndex + 1];
+            }
+            return null;
+        }
+
+        function continueToNextLevel(level) {
+            player.currentLevel = level;
+            startGame();
+        }
+
+        function restartLevel() {
+            startGame();
+        }
+
+        // ========================================
+        // 게임 오버
+        // ========================================
+        function gameOver() {
+            game.running = false;
+            cancelAnimationFrame(game.animFrame);
+            
+            // 게임 오버 시에는 현재 레벨 점수를 누적하지 않음
+            // (다시 도전해야 함)
+            
+            // 결과 화면 표시
+            document.getElementById('resultIcon').textContent = '💔';
+            document.getElementById('resultTitle').textContent = '게임 오버';
+            document.getElementById('resultTitle').className = 'result-title fail';
+            document.getElementById('resultLevelScore').textContent = game.score;
+            document.getElementById('resultCorrect').textContent = game.correctCount;
+            document.getElementById('resultWrong').textContent = game.wrongCount;
+            document.getElementById('resultTotalScore').textContent = player.totalScore;
+            
+            // 틀린 단어 표시 (최대 5개)
+            const wrongSection = document.getElementById('wrongWordsSection');
+            if (game.wrongWords.length > 0) {
+                wrongSection.style.display = 'block';
+                document.getElementById('wrongWordsList').innerHTML = game.wrongWords.map(w => `
+                    <div class="wrong-word-item">
+                        <span class="word">${w.word}</span>
+                        <span class="meaning">${w.meaning}</span>
+                    </div>
+                `).join('');
+            } else {
+                wrongSection.style.display = 'none';
+            }
+            
+            // 버튼 구성
+            document.getElementById('resultButtons').innerHTML = `
+                <button class="btn btn-primary" onclick="restartLevel()">🔄 다시 도전하기</button>
+                <button class="btn btn-secondary" onclick="showScreen('levelScreen')">📚 레벨 선택</button>
+                <button class="btn btn-warning" onclick="showScreen('leaderboardScreen')">🏆 순위 보기</button>
+            `;
+            
+            showScreen('resultScreen');
+        }
+
+        // ========================================
+        // 점수 저장
+        // ========================================
+        function saveScore() {
+            const scoreData = {
+                studentId: player.studentId,
+                playerName: player.name,
+                totalScore: player.totalScore,          // 누적 총점
+                levelScore: game.score,                 // 현재 레벨 점수
+                level: player.currentLevel,
+                passedLevels: player.passedLevels,
+                correct: game.correctCount,
+                wrong: game.wrongCount,
+                total: game.totalQuestions,
+                timestamp: Date.now(),
+                date: new Date().toISOString()
+            };
+            
+            // 같은 학번의 기존 최고 기록 확인 후 업데이트
+            database.ref('toeic_galaga/scores')
+                .orderByChild('studentId')
+                .equalTo(player.studentId)
+                .once('value')
+                .then(snapshot => {
+                    let shouldSave = true;
+                    let existingKey = null;
+                    let existingScore = 0;
+                    
+                    snapshot.forEach(child => {
+                        const data = child.val();
+                        if (data.totalScore >= player.totalScore) {
+                            shouldSave = false;
+                        } else {
+                            existingKey = child.key;
+                            existingScore = data.totalScore;
+                        }
+                    });
+                    
+                    if (shouldSave) {
+                        if (existingKey) {
+                            // 기존 기록 업데이트
+                            database.ref(`toeic_galaga/scores/${existingKey}`).update(scoreData);
+                        } else {
+                            // 새 기록 추가
+                            database.ref('toeic_galaga/scores').push(scoreData);
+                        }
+                    }
+                });
+        }
+
+        // ========================================
+        // 순위표
+        // ========================================
+        function loadLeaderboard() {
+            database.ref('toeic_galaga/scores')
+                .orderByChild('totalScore')
+                .limitToLast(50)
+                .once('value')
+                .then(snapshot => {
+                    const scores = [];
+                    snapshot.forEach(child => {
+                        scores.push(child.val());
+                    });
+                    
+                    // 총점 기준 내림차순 정렬
+                    scores.sort((a, b) => b.totalScore - a.totalScore);
+                    
+                    // 같은 학번은 최고 점수만 표시
+                    const uniqueScores = [];
+                    const seenIds = new Set();
+                    scores.forEach(s => {
+                        if (!seenIds.has(s.studentId)) {
+                            seenIds.add(s.studentId);
+                            uniqueScores.push(s);
+                        }
+                    });
+                    
+                    renderLeaderboard(uniqueScores);
+                });
+        }
+
+        function renderLeaderboard(scores) {
+            const container = document.getElementById('leaderboardList');
+            
+            if (scores.length === 0) {
+                container.innerHTML = '<p style="text-align:center; opacity:0.5; padding:20px;">아직 기록이 없습니다</p>';
+                return;
+            }
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            
+            container.innerHTML = scores.slice(0, 30).map((s, i) => `
+                <div class="lb-item">
+                    <div class="lb-rank">${i < 3 ? medals[i] : (i + 1)}</div>
+                    <div class="lb-info">
+                        <div class="lb-name">${s.playerName}</div>
+                        <div class="lb-detail">${s.studentId} | 최고 레벨: ${s.level}점</div>
+                    </div>
+                    <div class="lb-score">${s.totalScore}</div>
+                </div>
+            `).join('');
+        }
+
+        function goBackFromLeaderboard() {
+            if (player.name) {
+                showScreen('levelScreen');
+            } else {
+                showScreen('loginScreen');
+            }
+        }
+
+        // ========================================
+        // 컨트롤 설정
+        // ========================================
+        function setupControls() {
+            // 키보드
+            document.onkeydown = (e) => {
+                game.keys[e.code] = true;
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    shoot();
+                }
+            };
+            document.onkeyup = (e) => {
+                game.keys[e.code] = false;
+            };
+            
+            // 모바일 버튼
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const fireBtn = document.getElementById('fireBtn');
+            
+            leftBtn.ontouchstart = (e) => { e.preventDefault(); game.keys['ArrowLeft'] = true; };
+            leftBtn.ontouchend = () => game.keys['ArrowLeft'] = false;
+            rightBtn.ontouchstart = (e) => { e.preventDefault(); game.keys['ArrowRight'] = true; };
+            rightBtn.ontouchend = () => game.keys['ArrowRight'] = false;
+            fireBtn.ontouchstart = (e) => { e.preventDefault(); shoot(); };
+            
+            // 캔버스 터치
+            const canvas = game.canvas;
+            canvas.ontouchstart = (e) => {
+                e.preventDefault();
+                game.touchX = e.touches[0].clientX;
+            };
+            canvas.ontouchmove = (e) => {
+                e.preventDefault();
+                game.touchX = e.touches[0].clientX;
+            };
+            canvas.ontouchend = () => {
+                game.touchX = null;
+            };
+            
+            canvas.onclick = () => shoot();
+        }
+
+        // ========================================
+        // 사운드
+        // ========================================
+        function playSound(freq, duration, type) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = freq;
+                oscillator.type = type;
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // ========================================
+        // 윈도우 리사이즈
+        // ========================================
+        window.onresize = () => {
+            if (game.canvas) {
+                resizeCanvas();
+                if (game.ship) {
+                    game.ship.y = game.height - game.ship.height - 20;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
